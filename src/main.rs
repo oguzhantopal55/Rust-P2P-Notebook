@@ -25,6 +25,10 @@ fn main() {
             if let Err(_e) = result {
                 println!("Error Creating File");
             }
+            let result1 = add_file(&ui);
+            if let Err(_e) = result1 {
+                println!("Error Writing into filenames File");
+            }
             read_file_names(&ui);
         }
     });
@@ -72,7 +76,8 @@ fn create_file(ui: &MainWindow) -> std::io::Result<()>{
 }
 
 fn write_file(ui: &MainWindow) -> std::io::Result<()> {
-    let filename = format!("files/{}.txt", ui.get_written_file());
+    let filename = format!("files/{}.txt", ui.get_current_file());
+    println!("Saving to: {}", filename);
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)   
@@ -81,5 +86,17 @@ fn write_file(ui: &MainWindow) -> std::io::Result<()> {
 
     let overwrite = ui.get_content();
     file.write_all(overwrite.as_bytes())?;
+    Ok(())
+}
+
+fn add_file(ui: &MainWindow) -> std::io::Result<()> {
+    let filename = "files/filenames.txt";
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)   
+        .append(true) 
+        .open(&filename)?;
+    file.write(b"\n")?;
+    file.write(ui.get_new_file().as_bytes())?;
     Ok(())
 }

@@ -1,0 +1,82 @@
+import { TextEdit, VerticalBox, HorizontalBox, ListView, Button, LineEdit } from "std-widgets.slint";
+
+export component MainWindow inherits Window {
+    width: 1000px;
+    height: 1000px;
+
+    in-out property <string> content: "fail";
+    in-out property <[string]> files: ["empty"];
+
+    out property <string> written_file;
+    out property <string> current_file: "example";
+    out property <string> new_file: "New";
+
+    callback write();
+    callback new();
+    callback current();
+
+    popup := PopupWindow {
+        close-policy: no-auto-close;
+        Rectangle {
+            height:100%;
+            width: 100%;
+            LineEdit {
+                placeholder-text: "New Note";
+                accepted(text) => {
+                    new_file = text;
+                    written_file = "filenames";
+                    debug("Accepted: ", text);
+                    new();
+                    popup.close();
+                }
+            }
+        }
+        x: 20px;
+        y: 20px;
+        height: 50px;
+        width: 50px;
+    }
+
+    HorizontalBox {
+        spacing: 20px;
+        
+        VerticalBox {
+            Button {
+                text: "Create File";
+                clicked => {
+                    popup.show();
+                }
+            }
+            ListView {
+                for data in files : Button {
+                    height: 30px;
+                    width: parent.width;
+                    text: data;
+                    clicked => {
+                        current_file = data;
+                        current();
+                    }
+                }
+            }
+        }
+
+        VerticalBox {
+            TextEdit { 
+                font-size: 14px; 
+                text: content;
+                /*edited(text) =>{
+                    debug("text edited: ", current_file);
+                    written_file = current_file;
+                }
+
+                key-pressed(event) => {
+                    if (event.text == "s" && event.modifiers.control) {
+                        debug("two pressed");
+                        write();
+                    }
+                    accept
+                }*/
+            }
+        }
+    }
+}

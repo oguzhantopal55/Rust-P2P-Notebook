@@ -1,6 +1,8 @@
+use std::thread::spawn;
+
 use slint::ComponentHandle;
 use ttt::*;
-mod p2p;
+use tokio::runtime::Runtime;
 
 fn main() {
 
@@ -39,6 +41,12 @@ fn main() {
             }
         }
     });
+    
+    std::thread::spawn(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(iroh_end_point()).unwrap();
+    });
+
     ui.run().unwrap();
 
 }

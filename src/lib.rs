@@ -1,10 +1,14 @@
-mod p2p;
-
 use slint::{ModelRc, SharedString, VecModel};
 use std::fs::{File, OpenOptions};
 use std::io::Write;
-
+use anyhow::{Result};
+use iroh::{protocol::Router, Endpoint, SecretKey, endpoint::presets};
+use iroh_blobs::{store::mem::MemStore, BlobsProtocol, ticket::BlobTicket};
+use rand::rng;
+use tokio;
 slint::include_modules!();
+mod db;
+
 
 pub fn read_file_names(ui: &MainWindow) {
     let content = std::fs::read_to_string("files/filenames.txt").unwrap_or_default();
@@ -30,7 +34,7 @@ pub fn create_file(ui: &MainWindow) -> std::io::Result<()> {
     let mut file = File::create(filename)?;
     file.write_all(b"Selam Sana Imparator")?;
     Ok(())
-}
+} // hazir
 
 pub fn write_file(ui: &MainWindow) -> std::io::Result<()> {
     let filename = format!("files/{}.txt", ui.get_current_file());
@@ -55,5 +59,39 @@ pub fn add_file(ui: &MainWindow) -> std::io::Result<()> {
         .open(&filename)?;
     file.write(b"\n")?;
     file.write(ui.get_new_file().as_bytes())?;
+    Ok(())
+}
+
+pub async fn iroh_end_point() -> Result<()> {
+    let sec_key = SecretKey::generate(&mut rng());
+    let end_point = Endpoint::builder()
+        .secret_key(sec_key)
+        .bind()
+        .await?;
+    println!("> our node id: {}", end_point.id());
+    Ok(())
+}
+
+pub async fn send_file(ep: &Endpoint) -> Result<()>{
+    let store = MemStore::new();
+    let tag = store.add_slice(b"Hello world").await?;
+  
+    let _ = ep.online().await;
+    let addr = ep.addr();
+    let ticket = BlobTicket::new(addr, tag.hash, tag.format);
+
+    // build the router
+    let blobs = BlobsProtocol::new(&store, None);
+    let router = Router::builder(ep.clone())
+        .accept(iroh_blobs::ALPN, blobs)
+        .spawn();
+
+    println!("We are now serving {}", ticket);
+
+    // wait for control-c
+    tokio::signal::ctrl_c().await?;
+
+    // clean shutdown of router and store
+    router.shutdown().await?;
     Ok(())
 }

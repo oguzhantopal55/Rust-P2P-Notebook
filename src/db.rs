@@ -1,14 +1,6 @@
 use std::time::{self, SystemTime};
 use iroh::endpoint::ConnectionError;
-use rusqlite::{params, Connection, Result};
-
-#[derive(Debug)]
-pub struct Note {
-    pub id: i32,
-    pub name: String,
-    pub data: Option<String>,
-    pub time: i64,
-}
+use rusqlite::{params, Connection, Result, OptionalExtension};
 
 pub fn open_db() -> Result<Connection> {
     let conn = Connection::open("notes.db")?;
@@ -36,6 +28,33 @@ pub fn create_note(conn: &Connection, name: String) -> Result<()> {
 }
 
 pub fn write_note(conn: &Connection, data: String, name: String) -> Result<()> {
-    conn.execute("UPDATE notes SET data = ?2 WHERE name = ?1", params![name, data])?;
+    let now = SystemTime::now()
+        .duration_since(time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+    conn.execute("UPDATE notes SET data = ?2, time = ?3 WHERE name = ?1", params![name, data, now])?;
     Ok(())
+}
+
+pub fn read_note(conn: &Connection, name: String) -> Result<Option<String>> {
+    conn.query_row(
+        "SELECT data FROM notes WHERE name = ?1",
+        params![name],
+        |row| row.get(0),
+    ).optional()
+}
+
+pub fn get_time(conn: &Connection, name: String) -> Result<Option<i64>>{
+    conn.query_row(
+        "SELECT time FROM notes WHERE name = ?1",
+        params![name],
+        |row| row.get(0),
+    ).optional()
+}
+
+pub fn read_note_names(conn: &Connection) -> Result<Vec<String>> {
+    let mut stmt = conn.prepare("SELECT name FROM notes")?;
+    let names = stmt.query_map([], |row| row.get(0))?
+        .collect::<rusqlite::Result<Vec<String>>>()?;
+    Ok(names)
 }

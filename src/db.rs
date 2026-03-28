@@ -16,14 +16,16 @@ pub fn open_db() -> Result<Connection> {
 }
 
 pub fn create_note(conn: &Connection, name: String) -> Result<()> {
-    let now = SystemTime::now()
-        .duration_since(time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs() as i64;
-    conn.execute(
-        "INSERT INTO notes (name, data, time) VALUES (?1, ?2, ?3)",
-        params![name, Some("KRALIMIZ COK YASA".to_string()), now],
-    )?;
+    if !check_note(conn, name.clone()).unwrap_or_default() {
+        let now = SystemTime::now()
+            .duration_since(time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+        conn.execute(
+            "INSERT INTO notes (name, data, time) VALUES (?1, ?2, ?3)",
+            params![name, Some("KRALIMIZ COK YASA".to_string()), now],
+        )?;
+    }
     Ok(())
 }
 
@@ -57,4 +59,13 @@ pub fn read_note_names(conn: &Connection) -> Result<Vec<String>> {
     let names = stmt.query_map([], |row| row.get(0))?
         .collect::<rusqlite::Result<Vec<String>>>()?;
     Ok(names)
+}
+
+pub fn check_note(conn: &Connection, name: String) -> Result<bool> {
+    let count: i32 = conn.query_row(
+        "SELECT COUNT(*) FROM notes WHERE name = ?1",
+        params![name],
+        |row| row.get(0),
+    )?;
+    Ok(count > 0)
 }

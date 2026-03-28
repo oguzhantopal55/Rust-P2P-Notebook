@@ -5,25 +5,23 @@ export component MainWindow inherits Window {
     height: 1000px;
     in-out property <string> content: "fail";
     in-out property <[string]> files: ["empty"];
-
     out property <string> current_file: "example";
     out property <string> new_file: "New";
-
+    out property <string> requested_file;
     callback write();
     callback new();
     callback current();
+    callback request();
 
-    
     popup := PopupWindow {
         close-policy: close-on-click-outside;
         Rectangle {
-            height:100%;
+            height: 100%;
             width: 100%;
             LineEdit {
                 placeholder-text: "New Note";
                 accepted(text) => {
                     new_file = text;
-                    debug("Accepted: ", text);
                     new();
                     popup.close();
                 }
@@ -32,21 +30,47 @@ export component MainWindow inherits Window {
         x: 20px;
         y: 20px;
         height: 50px;
-        width: 50px;
+        width: 200px;
+    }
+
+    popup_2 := PopupWindow {
+        close-policy: close-on-click-outside;
+        Rectangle {
+            height: 100%;
+            width: 100%;
+            LineEdit {
+                placeholder-text: "Note Name";
+                accepted(text) => {
+                    requested_file = text;
+                    request();
+                    popup_2.close();
+                }
+            }
+        }
+        x: 20px;
+        y: 60px;
+        height: 50px;
+        width: 200px;
     }
 
     HorizontalBox {
         spacing: 20px;
-        
+
         VerticalBox {
-            Button {
-                text: "Create File";
-                clicked => {
-                    popup.show();
+            max-width: 200px;
+            VerticalBox {
+                Button {
+                    text: "New Note";
+                    clicked => { popup.show(); }
                 }
+                Button {
+                    text: "Request";
+                    clicked => { popup_2.show(); }
+                }
+                
             }
             ListView {
-                for data in files : Button {
+                for data in files: Button {
                     height: 30px;
                     width: parent.width;
                     text: data;
@@ -59,27 +83,23 @@ export component MainWindow inherits Window {
         }
 
         VerticalBox {
-            TextEdit { 
-                font-size: 14px; 
+            TextEdit {
+                font-size: 14px;
                 text <=> content;
-                edited(text) =>{
+                edited(text) => {
                     debug("text edited: ", current_file);
                 }
-
                 key-pressed(event) => {
                     if (event.text == "s" && event.modifiers.control) {
-                        debug("two pressed");
                         write();
                         accept
                     }
-                    if(event.text == "escape"){
+                    if (event.text == "escape") {
                         self.clear-focus();
                         accept
-                    }
-                    else{
+                    } else {
                         reject
                     }
-
                 }
             }
         }

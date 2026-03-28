@@ -1,5 +1,4 @@
 use std::sync::{Arc, Mutex};
-use std::thread;
 use slint::ComponentHandle;
 use ttt::*;
 use ttt::db::{open_db, create_note, write_note};
@@ -43,11 +42,6 @@ fn main() {
             }
         }
     });
-
-    thread::spawn(|| {
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        rt.block_on(iroh_end_point()).unwrap();
-    });
-
+    
     ui.run().unwrap();
 }

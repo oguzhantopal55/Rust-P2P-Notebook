@@ -8,10 +8,13 @@ export component MainWindow inherits Window {
     out property <string> current_file: "example";
     out property <string> new_file: "New";
     out property <string> requested_file;
+    out property <string> new_name;
     callback write();
     callback new();
     callback current();
     callback request();
+    callback rename();
+
 
     popup := PopupWindow {
         close-policy: close-on-click-outside;
@@ -53,6 +56,26 @@ export component MainWindow inherits Window {
         width: 200px;
     }
 
+    popup_3 := PopupWindow {
+        close-policy: close-on-click-outside;
+        Rectangle {
+            height: 100%;
+            width: 100%;
+            LineEdit {
+                placeholder-text: "Note Name";
+                accepted(text) => {
+                    new_name = text;
+                    rename();
+                    popup_3.close();
+                }
+            }
+        }
+        x: 20px;
+        y: 100px;
+        height: 50px;
+        width: 200px;
+    }
+
     HorizontalBox {
         spacing: 20px;
 
@@ -66,6 +89,10 @@ export component MainWindow inherits Window {
                 Button {
                     text: "Request";
                     clicked => { popup_2.show(); }
+                }
+                Button {
+                    text: "Rename";
+                    clicked => {popup_3.show(); }
                 }
                 
             }

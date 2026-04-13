@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use slint::ComponentHandle;
 use ttt::*;
-use ttt::db::{open_db, create_note, write_note};
+use ttt::db::{open_db, create_note, write_note, rename_note};
 
 fn main() {
     let conn = open_db().unwrap();
@@ -42,6 +42,18 @@ fn main() {
             }
         }
     });
+
+    let conn_rename = conn.clone();
+    let ui_weak_rename = ui.as_weak();
     
+    ui.on_rename(move || {
+    if let Some(ui) = ui_weak_rename.upgrade() {
+        let conn = conn_rename.lock().unwrap();
+        if let Err(e) = rename_note(&*conn, ui.get_current_file().to_string(), ui.get_new_name().to_string()) {
+            println!("Error Renaming Note: {}", e);
+        }
+        ui_read_note_names(&*conn, &ui);
+    }
+    });
     ui.run().unwrap();
 }

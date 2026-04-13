@@ -69,3 +69,11 @@ pub fn check_note(conn: &Connection, name: String) -> Result<bool> {
     )?;
     Ok(count > 0)
 }
+
+pub fn rename_note(conn: &Connection, name: String, new: String) -> Result<bool> {
+    let affected = conn.execute(
+        "UPDATE notes SET name = ?1 WHERE name = ?2",
+        params![new, name],
+    )?;
+    Ok(affected > 0)
+}

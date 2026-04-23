@@ -16,3 +16,4 @@ pub fn ui_read_current_note(conn: &Connection, ui: &MainWindow) {
     let content = read_note(conn, name).unwrap_or_default().unwrap_or_default();
     ui.set_content(SharedString::from(content));
 }
+

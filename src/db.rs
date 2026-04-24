@@ -1,5 +1,4 @@
 use std::time::{self, SystemTime};
-use iroh::{self, Endpoint, EndpointAddr};
 use rusqlite::{params, Connection, Result, OptionalExtension};
 
 pub fn open_db() -> Result<Connection> {
@@ -13,9 +12,10 @@ pub fn open_db() -> Result<Connection> {
         );
 
         CREATE TABLE IF NOT EXISTS user (
-            id INTEGER PRIMARY KEY CHECK (id = 1),
-            name TEXT NOT NULL,
-            node_id TEXT NOT NULL UNIQUE
+            id         INTEGER PRIMARY KEY CHECK (id = 1),
+            name       TEXT NOT NULL,
+            secret_key TEXT NOT NULL UNIQUE,
+            node_id    TEXT NOT NULL UNIQUE
         );
 
         CREATE TABLE IF NOT EXISTS connected_users (
@@ -87,26 +87,58 @@ pub fn rename_note(conn: &Connection, name: String, new: String) -> Result<bool>
 
 // ===== USER =====
 
-pub fn create_user(conn: &Connection, name: String, node_id: String) -> Result<()> {
+pub fn create_user(conn: &Connection, name: String, secret_key: String, node_id: String) -> Result<()> {
     conn.execute(
-        "INSERT OR IGNORE INTO user (id, name, node_id) VALUES (1, ?1, ?2)",
-        params![name, node_id],
+        "INSERT OR IGNORE INTO user (id, name, secret_key, node_id) VALUES (1, ?1, ?2, ?3)",
+        params![name, secret_key, node_id],
     )?;
     Ok(())
 }
 
-pub fn get_user(conn: &Connection) -> Result<Option<(String, String)>> {
+pub fn get_user(conn: &Connection) -> Result<Option<(String, String, String)>> {
     conn.query_row(
-        "SELECT name, node_id FROM user WHERE id = 1",
+        "SELECT name, secret_key, node_id FROM user WHERE id = 1",
         [],
-        |row| Ok((row.get(0)?, row.get(1)?)),
+        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
     ).optional()
 }
 
-pub fn update_user(conn: &Connection, name: String, node_id: String) -> Result<bool> {
+pub fn get_user_node(conn: &Connection) -> Result<Option<String>> {
+    conn.query_row(
+        "SELECT node_id FROM user WHERE id = 1",
+        [],
+        |row| row.get(0),
+    ).optional()
+}
+
+pub fn get_user_secret(conn: &Connection) -> Result<Option<String>> {
+    conn.query_row(
+        "SELECT secret_key FROM user WHERE id = 1",
+        [],
+        |row| row.get(0),
+    ).optional()
+}
+
+pub fn update_user_name(conn: &Connection, name: String) -> Result<bool> {
     let affected = conn.execute(
-        "UPDATE user SET name = ?1, node_id = ?2 WHERE id = 1",
-        params![name, node_id],
+        "UPDATE user SET name = ?1 WHERE id = 1",
+        params![name],
+    )?;
+    Ok(affected > 0)
+}
+
+pub fn update_user_node(conn: &Connection, node: String) -> Result<bool> {
+    let affected = conn.execute(
+        "UPDATE user SET node_id = ?1 WHERE id = 1",
+        params![node],
+    )?;
+    Ok(affected > 0)
+}
+
+pub fn update_user_secret(conn: &Connection, secret_key: String) -> Result<bool> {
+    let affected = conn.execute(
+        "UPDATE user SET secret_key = ?1 WHERE id = 1",
+        params![secret_key],
     )?;
     Ok(affected > 0)
 }
